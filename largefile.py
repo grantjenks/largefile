@@ -2,7 +2,7 @@
 # Large File Support
 """
 
-import os, tempfile, heapq, platform, subprocess, random
+import os, tempfile, random
 
 from cStringIO import StringIO
 from itertools import imap, chain
@@ -86,9 +86,9 @@ def sort(filename, readchunk=2**28, writechunk=2**18):
                 if len(lines) == 0: break
                 fptr.writelines(lines)
     finally:
-        for filename in files:
+        for name in files:
             try:
-                os.remove(filename)
+                os.remove(name)
             except:
                 pass
 
@@ -157,10 +157,44 @@ def _shuffle_worker(args):
     with open(temp, 'wb') as fptr:
         fptr.writelines(lines)
 
+def reduce(filename, generator, bufsize=2**22):
+    """
+    Reduce lines from `filename` *in-place* using `generator`.
+
+    Reduce will initialize the generator function by calling .next(). Then each
+    line from `filename` will be sent to the `generator` and the received line
+    will be written back to the file.
+    """
+    generator.next()
+    temp = tempfile.mktemp(prefix='largefile-')
+    reader = lines(filename, bufsize)
+
+    with open(temp, 'wb') as fptr:
+        for line in reader:
+            fptr.write(generator.send(line))
+
+    del reader
+    os.remove(filename)
+    os.rename(temp, filename)
+
+def uniq2(filename, bufsize=2**22):
+    def _uniq():
+        last = yield
+        yield last
+        while True:
+            line = yield
+            if line != last:
+                yield line
+            else:
+                yield ''
+            last = line
+    reduce(filename, _uniq, bufsize)
+
 def uniq(filename, bufsize=2**22):
     """
     Remove duplicate lines from `filename` *in-place*.
     Buffers reads of approximately `bufsize`.
+    Requires file be sorted.
     """
     temp = tempfile.mktemp(prefix='largefile-')
     reader = lines(filename, bufsize)
@@ -273,42 +307,6 @@ def look(filename, needle, key=lambda value: value):
         else:
             raise RuntimeError('look fail')
 
-def fast_sort(filename):
-    cmd = None
-    sysname = platform.system()
-    cygwin_sort = 'c:/cygwin/bin/sort.exe'
-
-    if sysname == 'Windows' and os.path.isfile(cygwin_sort):
-        cmd = cygwin_sort
-    elif sysname == 'Linux':
-        cmd = 'sort'
-
-    if cmd is None:
-        sort(self.filename)
-    else:
-        env = os.environ.copy()
-        env['LC_ALL'] = 'C'
-        env['LC_COLLATE'] = 'C'
-        subprocess.check_call([cmd, '-o', self.filename, self.filename], env=env)
-
-def fast_uniq(filename):
-    cmd = None
-    sysname = platform.system()
-    cygwin_uniq = 'c:/cygwin/bin/uniq.exe'
-
-    if sysname == 'Windows' and os.path.isfile(cygwin_uniq):
-        cmd = cygwin_uniq
-    elif sysname == 'Linux':
-        cmd = 'sort'
-
-    if cmd is None:
-        uniq(self.filename)
-    else:
-        env = os.environ.copy()
-        env['LC_ALL'] = 'C'
-        env['LC_COLLATE'] = 'C'
-        subprocess.check_call([cmd, '-u', '-o', self.filename, self.filename], env=env)
-
 class LargeFile:
     def __init__(self, filename):
         self.filename = filename
@@ -317,10 +315,10 @@ class LargeFile:
         return look(self.filename, needle, key)
 
     def sort(self):
-        fast_sort(self.filename)
+        sort(self.filename)
 
     def uniq(self):
-        fast_uniq(self.filename)
+        uniq(self.filename)
 
     def shuffle(self):
         shuffle(self.filename)

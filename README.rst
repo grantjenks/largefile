@@ -108,3 +108,20 @@ Copyright 2014 Grant Jenks
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.
+
+Todo
+====
+
+* Test/compare uniq vs uniq2 and reduce
+* Generalize pattern for uniq (map + generator)
+* Show an example of `filter` using `reduce`
+* linecount made faster by parallelizing?
+* Allow output to separate file
+* Add limitations discussion to documentation
+* Add key for sort
+* Generalize pattern for sort/shuffle (needs example to motivate)
+  * Maybe divide split/combine so sort is split + combine but you could also simply split or simply combine
+* Push repo to github
+* Create docs
+* Create tests
+* Upload to PyPI/pythonhosted
