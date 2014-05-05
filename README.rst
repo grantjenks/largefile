@@ -121,6 +121,10 @@ Todo
 * Add key for sort
 * Generalize pattern for sort/shuffle (needs example to motivate)
   * Maybe divide split/combine so sort is split + combine but you could also simply split or simply combine
+* Add `tail` function (see suggestions on SO)
+  * chunks > read chunks in reverse > yield lines in reverse
+  * Might as well add `head` as well then
+  * Also provide a `reverse` line iterator
 * Push repo to github
 * Create docs
 * Create tests
